@@ -34,3 +34,10 @@ func RDecodeBody(d Decoder) func(interface{}) RFn {
 		}
 	}
 }
+
+// RErrorFromStatus returns an error depending on the response status.
+func RErrorFromStatus(f func(status int) error) RFn {
+	return func(r *http.Response) (*http.Response, error) {
+		return r, f(r.StatusCode)
+	}
+}
