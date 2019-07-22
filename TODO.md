@@ -13,6 +13,19 @@
 	- Tests
 	- Examples
 	- ResponseWriter with Code implementation, and associated middleware
+- Decoder
+	- ExtendDecoderFn(decoder, DecoderExtensionFn) Decoder
+	- Validator.Validate as DecoderExtensionFn
+	- Schema.Parse as DecoderExtension
+
+- Model binding middleware (low priority)
+	- the parameter name
+	- the conversion func from name to key -- mux.Vars or httprouter.P
+	- the function returning object from key -- mapper.GetXXX
+		- func(error) []byte -- default to http.StatusText
+		- func(error) http status -- default to 404
+	- the context getter/setter (iterable) -- CtxSetXXX
+
 
 ## mcontext
 
@@ -35,4 +48,4 @@
 ## contributing
 
 - define rules for contribution
-- set up CI (travis ?)
+- setup CI (travis ?)
