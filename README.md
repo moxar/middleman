@@ -1,5 +1,8 @@
 # Middleman 
 
+[![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/moxar/middleman)
+[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/moxar/middleman/master/LICENSE)
+
 `middleman` is a Golang, extensible, functional based, toolkit meant to ease life of developers.
 It provides handy ways of setting middlewares at different levels of the stack.
 
