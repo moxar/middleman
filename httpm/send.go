@@ -14,16 +14,16 @@ type Doer interface {
 // Send a request and handles its response with the http.DefaultClient.
 //  If in is nil, Send returns an error.
 //  If out is nil, the response is not handled. This can be useful for fire & forget usages.
-func Send(in QFn, out RFn) error {
+func Send(in RequestFn, out ResponseFn) error {
 	return NewSender(http.DefaultClient)(in, out)
 }
 
 // NewSender returns a function that sends a request and handling its
 // response with the given doer. See Send for details.
-func NewSender(client Doer) func(QFn, RFn) error {
-	return func(in QFn, out RFn) error {
+func NewSender(client Doer) func(RequestFn, ResponseFn) error {
+	return func(in RequestFn, out ResponseFn) error {
 		if in == nil {
-			return errors.New("QFn is nil")
+			return errors.New("RequestFn is nil")
 		}
 		req, err := in(&http.Request{})
 		if err != nil {

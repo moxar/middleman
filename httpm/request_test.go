@@ -3,7 +3,7 @@ package httpm_test
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -13,8 +13,8 @@ import (
 	"github.com/moxar/middleman/httpm"
 )
 
-func TestQNew(t *testing.T) {
-	r, err := httpm.QNew("POST", "https://github.com")(nil)
+func TestNewRequest(t *testing.T) {
+	r, err := httpm.NewRequest("POST", "https://github.com")(nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -35,21 +35,25 @@ func TestQNew(t *testing.T) {
 	}
 }
 
-func TestQEncodeDecodeBody(t *testing.T) {
+func TestWriteRequestBody(t *testing.T) {
 	type Payload struct {
 		Foo string
 		Bar int
 	}
 	in := Payload{Foo: "foo", Bar: 4}
-	r, err := httpm.QEncodeBody(json.Marshal)(in)(new(http.Request))
+	r, err := httpm.WriteRequestBody(json.Marshal)(in)(new(http.Request))
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	var out Payload
-	r, err = httpm.QDecodeBody(json.Unmarshal)(&out)(r)
+	raw, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		t.Error(err)
+		return
+	}
+	var out Payload
+	if err := json.Unmarshal(raw, &out); err != nil {
 		t.Error(err)
 		return
 	}
@@ -69,27 +73,34 @@ func TestQEncodeDecodeBody(t *testing.T) {
 	}
 }
 
-func TestComposeQFn(t *testing.T) {
+func TestComposeRequest(t *testing.T) {
 
 	t.Run("on happy case", func(t *testing.T) {
 		type Payload struct {
 			Foo string
 			Bar int
 		}
-		in := Payload{Foo: "foo", Bar: 4}
 
-		r, err := httpm.ComposeQFn(
-			httpm.QNew("POST", "https://github.com"),
-			httpm.QEncodeBody(json.Marshal)(in),
-		)(nil)
+		newRequest := func(path, url string, input interface{}) (*http.Request, error) {
+			return httpm.ComposeRequest(
+				httpm.NewRequest(path, url),
+				httpm.WriteRequestBody(json.Marshal)(input),
+			)(nil)
+		}
+
+		in := Payload{Foo: "foo", Bar: 4}
+		r, err := newRequest("POST", "https://github.com", in)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-
-		var out Payload
-		r, err = httpm.QDecodeBody(json.Unmarshal)(&out)(r)
+		raw, err := ioutil.ReadAll(r.Body)
 		if err != nil {
+			t.Error(err)
+			return
+		}
+		var out Payload
+		if err := json.Unmarshal(raw, &out); err != nil {
 			t.Error(err)
 			return
 		}
@@ -114,13 +125,13 @@ func TestComposeQFn(t *testing.T) {
 		}
 	})
 
-	t.Run("on failing QFn", func(t *testing.T) {
+	t.Run("on failing RequestFn", func(t *testing.T) {
 		var i int
 		failer := func(r *http.Request) (*http.Request, error) {
 			i++
 			return nil, errors.New("boom")
 		}
-		_, err := httpm.ComposeQFn(
+		_, err := httpm.ComposeRequest(
 			failer,
 			failer,
 			failer,
@@ -135,32 +146,67 @@ func TestComposeQFn(t *testing.T) {
 	})
 }
 
-func ExampleComposeQFn() {
+func ExampleComposeRequest_Client() {
 
-	// Define a noop function, witness print order.
-	Println := func(vs ...interface{}) httpm.QFn {
-		return func(r *http.Request) (*http.Request, error) {
-			fmt.Println(vs...)
-			return r, nil
-		}
+	var encode httpm.Encoder // json.Marshal
+
+	NewRequest := func(path, url string, input interface{}) (*http.Request, error) {
+		return httpm.ComposeRequest(
+			httpm.NewRequest(path, url),
+			httpm.WriteRequestBody(encode)(input),
+		)(nil)
+	}
+
+	type Hero struct {
+		Name     string
+		Universe string
 	}
 
 	// Compose request.
-	r, err := httpm.ComposeQFn(
-		Println("Foo"),
-		httpm.QNew("POST", "https://github.com"),
-		Println("Bar"),
-		httpm.QEncodeBody(json.Marshal)(map[string]string{"foo": "bar"}),
-	)(nil)
-
+	batman := Hero{Name: "Batman", Universe: "DC"}
+	r, err := NewRequest("POST", "https://api.superheroes.com/heroes", batman)
 	if err != nil {
 		log.Println(err)
 	}
 
 	// use r
 	_ = r
+}
 
-	// Output:
-	// Foo
-	// Bar
+func ExampleComposeRequest_Server() {
+
+	var parseParams httpm.ParamParser // gorilla/schema.NewDecoder().Decode
+	var check httpm.Checker           // asaskevich/govalidator.ValidateStruct
+	var decode httpm.Decoder          // json.Unmarshal
+
+	// parseRequest parses the request params (?foo=bar) and body.
+	parseRequest := func(r *http.Request, body, params interface{}) error {
+		_, err := httpm.ComposeRequest(
+			httpm.ReadRequestBody(httpm.DecodeAndCheck(decode, check))(body),
+			httpm.ReadRequestParams(parseParams)(params),
+		)(r)
+		return err
+	}
+
+	type Hero struct {
+		Name     string `valid:"stringlength(1,255)"`
+		Universe string `valid: "in(DC|Marvel)"`
+	}
+
+	type Params struct {
+		FastInsert bool
+	}
+
+	// HTTP Handler...
+	handle := func(w http.ResponseWriter, r *http.Request) {
+		var hero Hero
+		var params Params
+		if err := parseRequest(r, &hero, &params); err != nil {
+			// ...
+		}
+
+		// use hero and params values
+	}
+
+	_ = handle
 }

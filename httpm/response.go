@@ -5,12 +5,12 @@ import (
 	"net/http"
 )
 
-// RFn describes a function that can be member of a chainable Response handling.
-type RFn = func(*http.Response) (*http.Response, error)
+// ResponseFn describes a function that can be member of a chainable Response handling.
+type ResponseFn = func(*http.Response) (*http.Response, error)
 
-// ComposeRFn composes a list of RFns into one.
-// ComposeRFn(foo, bar) is functionnally equivalent to bar(foo(w))
-func ComposeRFn(fns ...RFn) RFn {
+// ComposeResponse composes a list of ResponseFns into one.
+// ComposeResponse(foo, bar) is functionnally equivalent to bar(foo(w))
+func ComposeResponse(fns ...ResponseFn) ResponseFn {
 	return func(r *http.Response) (*http.Response, error) {
 		var err error
 		for _, fn := range fns {
@@ -22,21 +22,21 @@ func ComposeRFn(fns ...RFn) RFn {
 	}
 }
 
-// RDecodeBody decodes the request body.
-func RDecodeBody(d Decoder) func(interface{}) RFn {
-	return func(input interface{}) RFn {
+// ReadResponseBody decodes the body.
+func ReadResponseBody(d Decoder) func(into interface{}) ResponseFn {
+	return func(into interface{}) ResponseFn {
 		return func(r *http.Response) (*http.Response, error) {
 			raw, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				return nil, err
 			}
-			return r, d(raw, input)
+			return r, d(raw, into)
 		}
 	}
 }
 
-// RErrorFromStatus returns an error depending on the response status.
-func RErrorFromStatus(f func(status int) error) RFn {
+// ReturnErrorFromResponseStatus returns an error depending on the response status.
+func ReturnErrorFromResponseStatus(f func(status int) error) ResponseFn {
 	return func(r *http.Response) (*http.Response, error) {
 		return r, f(r.StatusCode)
 	}
