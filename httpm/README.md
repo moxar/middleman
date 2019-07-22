@@ -54,19 +54,19 @@ var(
 		)
  	}
 
-	readRequest = func(payload interface{}) httpm.QFn {
+	readRequest = func(r *http.Request, payload interface{}) *http.Request {
   		return httpm.ComposeQFn(
 			httpm.QDecode(json.Unmarshal)(payload),
 			// add other function to apply to the request here.
 			// Want to parse headers ? request parameters ?
-		)
+		)(r)
 	}
 
-	writeResponse = func(payload interface{}, status int) httpm.WFn {
+	writeResponse = func(w http.ResponseWriter, payload interface{}, status int) http.ResponseWriter {
   		return httpm.ComposeWFn(
 			httpm.WWriteStatus(status),
 			httpm.WEncode(json.Marshal)(payload),
-		)
+		)(w)
   	}
 
 	readResponse = func(payload interface{}) httpm.RFn {
@@ -87,12 +87,12 @@ func Call() {
 
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var payload Request
-	if err := readRequest(&payload)(r); err != nil {
+	if err := readRequest(r, &payload); err != nil {
 		// ...
 	}
 
   	// the request is ready to be used by business logic.
 	var out Response
-	writeResponse(out, http.StatusOK)(w)
+	writeResponse(w, out, http.StatusOK)
 }
 ```
