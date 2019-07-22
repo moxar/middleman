@@ -146,7 +146,7 @@ func TestComposeRequest(t *testing.T) {
 	})
 }
 
-func ExampleComposeRequest_Client() {
+func ExampleComposeRequest_client() {
 
 	var encode httpm.Encoder // json.Marshal
 
@@ -173,7 +173,7 @@ func ExampleComposeRequest_Client() {
 	_ = r
 }
 
-func ExampleComposeRequest_Server() {
+func ExampleComposeRequest_server() {
 
 	var parseParams httpm.ParamParser // gorilla/schema.NewDecoder().Decode
 	var check httpm.Checker           // asaskevich/govalidator.ValidateStruct
@@ -189,8 +189,8 @@ func ExampleComposeRequest_Server() {
 	}
 
 	type Hero struct {
-		Name     string `valid:"stringlength(1,255)"`
-		Universe string `valid: "in(DC|Marvel)"`
+		Name     string
+		Universe string
 	}
 
 	type Params struct {

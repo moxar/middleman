@@ -1,6 +1,6 @@
 # httpm
 
-[![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/moxar/middleman/mhttp)
+[![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/moxar/middleman/httpm)
 
 `httpm` is the middleman subpackage specialized in http.
 

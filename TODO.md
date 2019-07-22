@@ -6,15 +6,13 @@
 - Package documentation
 
 - ~Request (Q)~
-- ~Response (R)~
+- Response (R)
+	- Tests
+	- Examples
 - ResponseWriter (W)
 	- Tests
 	- Examples
 	- ResponseWriter with Code implementation, and associated middleware
-- Decoder
-	- ExtendDecoderFn(decoder, DecoderExtensionFn) Decoder
-	- Validator.Validate as DecoderExtensionFn
-	- Schema.Parse as DecoderExtension
 
 - Model binding middleware (low priority)
 	- the parameter name

@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 // RequestFn describes a function that can be member of a chainable Request handling.
@@ -63,7 +64,7 @@ func ReadRequestBody(d Decoder) func(into interface{}) RequestFn {
 }
 
 // ParamParser designates a function capable of parsing URL params.
-type ParamParser = func(interface{}, map[string][]string) error
+type ParamParser = func(interface{}, url.Values) error
 
 // ReadRequestParams decodes the request parameters.
 func ReadRequestParams(fn ParamParser) func(interface{}) RequestFn {
