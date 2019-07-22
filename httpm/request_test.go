@@ -115,13 +115,22 @@ func TestComposeQFn(t *testing.T) {
 	})
 
 	t.Run("on failing QFn", func(t *testing.T) {
+		var i int
+		failer := func(r *http.Request) (*http.Request, error) {
+			i++
+			return nil, errors.New("boom")
+		}
 		_, err := httpm.ComposeQFn(
-			func(*http.Request) (*http.Request, error) {
-				return nil, errors.New("fail")
-			},
+			failer,
+			failer,
+			failer,
 		)(nil)
 		if err == nil {
 			t.Fail()
+		}
+		if i != 1 {
+			t.Errorf("too many Fn called, expected 1, having %d", i)
+			return
 		}
 	})
 }

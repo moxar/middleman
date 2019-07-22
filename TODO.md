@@ -6,9 +6,7 @@
 - Package documentation
 
 - ~Request (Q)~
-- Response (R)
-	- Tests
-	- Examples
+- ~Response (R)~
 - ResponseWriter (W)
 	- Tests
 	- Examples
