@@ -7,12 +7,12 @@ import (
 	"net/http"
 )
 
-// QFn describes a function that can be member of a chainable Request handling.
-type QFn = func(*http.Request) (*http.Request, error)
+// RequestFn describes a function that can be member of a chainable Request handling.
+type RequestFn = func(*http.Request) (*http.Request, error)
 
-// ComposeQFn composes a list of QFn into one.
-// ComposeQFn(foo, bar) is functionnally equivalent to bar(foo(r))
-func ComposeQFn(fns ...QFn) QFn {
+// ComposeRequest composes a list of RequestFn into one.
+// ComposeRequest(foo, bar) is functionnally equivalent to bar(foo(r))
+func ComposeRequest(fns ...RequestFn) RequestFn {
 	return func(r *http.Request) (*http.Request, error) {
 		var err error
 		for _, fn := range fns {
@@ -24,16 +24,16 @@ func ComposeQFn(fns ...QFn) QFn {
 	}
 }
 
-// QNew prepares a http request with the standard http.NewRequest method.
-func QNew(method, url string) QFn {
+// NewRequest prepares a http request with the standard http.NewRequest method.
+func NewRequest(method, url string) RequestFn {
 	return func(*http.Request) (*http.Request, error) {
 		return http.NewRequest(method, url, nil)
 	}
 }
 
-// QEncodeBody encodes and writes the given input in the body.
-func QEncodeBody(e Encoder) func(interface{}) QFn {
-	return func(input interface{}) QFn {
+// WriteRequestBody encodes and writes the given input in the body.
+func WriteRequestBody(e Encoder) func(input interface{}) RequestFn {
+	return func(input interface{}) RequestFn {
 		return func(r *http.Request) (*http.Request, error) {
 			raw, err := e(input)
 			if err != nil {
@@ -49,15 +49,40 @@ func QEncodeBody(e Encoder) func(interface{}) QFn {
 	}
 }
 
-// QDecodeBody decodes the request body.
-func QDecodeBody(d Decoder) func(interface{}) QFn {
-	return func(input interface{}) QFn {
+// ReadRequestBody decodes the request body.
+func ReadRequestBody(d Decoder) func(into interface{}) RequestFn {
+	return func(into interface{}) RequestFn {
 		return func(r *http.Request) (*http.Request, error) {
 			raw, err := ioutil.ReadAll(r.Body)
 			if err != nil {
 				return nil, err
 			}
-			return r, d(raw, input)
+			return r, d(raw, into)
 		}
+	}
+}
+
+// ParamParser designates a function capable of parsing URL params.
+type ParamParser = func(interface{}, map[string][]string) error
+
+// ReadRequestParams decodes the request parameters.
+func ReadRequestParams(fn ParamParser) func(interface{}) RequestFn {
+	return func(into interface{}) RequestFn {
+		return func(r *http.Request) (*http.Request, error) {
+			return r, fn(into, map[string][]string(r.URL.Query()))
+		}
+	}
+}
+
+// Checker is a func that checks the validity of an input.
+type Checker = func(interface{}) error
+
+// DecodeAndCheck the input.
+func DecodeAndCheck(decode Decoder, check Checker) Decoder {
+	return func(raw []byte, input interface{}) error {
+		if err := decode(raw, input); err != nil {
+			return err
+		}
+		return check(input)
 	}
 }

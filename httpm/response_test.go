@@ -14,7 +14,7 @@ import (
 	"github.com/moxar/middleman/httpm"
 )
 
-func TestRDecodeBody(t *testing.T) {
+func TestReadResponseBody(t *testing.T) {
 	type Payload struct {
 		Foo string
 		Bar int
@@ -24,7 +24,7 @@ func TestRDecodeBody(t *testing.T) {
 	r.Body = ioutil.NopCloser(strings.NewReader(`{"foo":"foo", "bar": 4}`))
 
 	var got Payload
-	r, err := httpm.RDecodeBody(json.Unmarshal)(&got)(r)
+	r, err := httpm.ReadResponseBody(json.Unmarshal)(&got)(r)
 	if err != nil {
 		t.Error(err)
 		return
@@ -37,7 +37,7 @@ func TestRDecodeBody(t *testing.T) {
 	}
 }
 
-func TestRErrorFromStatus(t *testing.T) {
+func TestReturnErrorFromResponseStatus(t *testing.T) {
 	e := func(s int) error {
 		if s <= http.StatusBadRequest {
 			return nil
@@ -47,7 +47,7 @@ func TestRErrorFromStatus(t *testing.T) {
 	t.Run("on happy case", func(t *testing.T) {
 
 		r := &http.Response{StatusCode: 202}
-		_, err := httpm.RErrorFromStatus(e)(r)
+		_, err := httpm.ReturnErrorFromResponseStatus(e)(r)
 		if err != nil {
 			t.Error(err)
 			return
@@ -56,7 +56,7 @@ func TestRErrorFromStatus(t *testing.T) {
 
 	t.Run("on bad status", func(t *testing.T) {
 		r := &http.Response{StatusCode: 500}
-		_, err := httpm.RErrorFromStatus(e)(r)
+		_, err := httpm.ReturnErrorFromResponseStatus(e)(r)
 		if err == nil {
 			t.Fail()
 			return
@@ -64,17 +64,17 @@ func TestRErrorFromStatus(t *testing.T) {
 	})
 }
 
-func TestComposeRFn(t *testing.T) {
+func TestComposeResponse(t *testing.T) {
 	t.Run("on happy case", func(t *testing.T) {
 		var order []string
-		succeeder := func(val string) httpm.RFn {
+		succeeder := func(val string) httpm.ResponseFn {
 			return func(r *http.Response) (*http.Response, error) {
 				order = append(order, val)
 				return r, nil
 			}
 		}
 
-		_, err := httpm.ComposeRFn(
+		_, err := httpm.ComposeResponse(
 			succeeder("A"),
 			succeeder("B"),
 			succeeder("C"),
@@ -91,14 +91,14 @@ func TestComposeRFn(t *testing.T) {
 		}
 	})
 
-	t.Run("on failing RFn", func(t *testing.T) {
+	t.Run("on failing ResponseFn", func(t *testing.T) {
 		var i int
 		failer := func(r *http.Response) (*http.Response, error) {
 			i++
 			return nil, errors.New("boom")
 		}
 
-		_, err := httpm.ComposeRFn(
+		_, err := httpm.ComposeResponse(
 			failer,
 			failer,
 			failer,
@@ -115,10 +115,10 @@ func TestComposeRFn(t *testing.T) {
 	})
 }
 
-func ExampleComposeRFn() {
+func ExampleComposeResponse() {
 
 	// Define a noop function, witness print order.
-	Println := func(vs ...interface{}) httpm.RFn {
+	Println := func(vs ...interface{}) httpm.ResponseFn {
 		return func(r *http.Response) (*http.Response, error) {
 			fmt.Println(vs...)
 			return r, nil
@@ -139,11 +139,11 @@ func ExampleComposeRFn() {
 
 	// Compose response.
 	var out = make(map[string]string)
-	r, err := httpm.ComposeRFn(
+	r, err := httpm.ComposeResponse(
 		Println("Foo"),
-		httpm.RErrorFromStatus(FailOver400),
+		httpm.ReturnErrorFromResponseStatus(FailOver400),
 		Println("Bar"),
-		httpm.RDecodeBody(json.Unmarshal)(&out),
+		httpm.ReadResponseBody(json.Unmarshal)(&out),
 	)(r)
 
 	if err != nil {
