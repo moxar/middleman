@@ -1,7 +1,6 @@
 package httpm_test
 
 import (
-	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -36,12 +35,8 @@ func TestNewRequest(t *testing.T) {
 }
 
 func TestWriteRequestBody(t *testing.T) {
-	type Payload struct {
-		Foo string
-		Bar int
-	}
-	in := Payload{Foo: "foo", Bar: 4}
-	r, err := httpm.WriteRequestBody(json.Marshal)(in)(new(http.Request))
+	in := "some string"
+	r, err := httpm.WriteRequestBody(httpm.EncodeText)(in)(new(http.Request))
 	if err != nil {
 		t.Error(err)
 		return
@@ -52,16 +47,13 @@ func TestWriteRequestBody(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	var out Payload
-	if err := json.Unmarshal(raw, &out); err != nil {
-		t.Error(err)
+	out := string(raw)
+
+	if out != in {
+		t.Fail()
 		return
 	}
 
-	if !reflect.DeepEqual(in, out) {
-		t.Error(in, out)
-		return
-	}
 	if r.GetBody == nil {
 		t.Error("GetBody should not be nil")
 		return
@@ -76,19 +68,15 @@ func TestWriteRequestBody(t *testing.T) {
 func TestComposeRequest(t *testing.T) {
 
 	t.Run("on happy case", func(t *testing.T) {
-		type Payload struct {
-			Foo string
-			Bar int
-		}
 
 		newRequest := func(path, url string, input interface{}) (*http.Request, error) {
 			return httpm.ComposeRequest(
 				httpm.NewRequest(path, url),
-				httpm.WriteRequestBody(json.Marshal)(input),
+				httpm.WriteRequestBody(httpm.EncodeText)(input),
 			)(nil)
 		}
 
-		in := Payload{Foo: "foo", Bar: 4}
+		in := "some payload"
 		r, err := newRequest("POST", "https://github.com", in)
 		if err != nil {
 			t.Error(err)
@@ -99,14 +87,9 @@ func TestComposeRequest(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		var out Payload
-		if err := json.Unmarshal(raw, &out); err != nil {
-			t.Error(err)
-			return
-		}
-
-		if !reflect.DeepEqual(in, out) {
-			t.Error(in, out)
+		out := string(raw)
+		if out != in {
+			t.Fail()
 			return
 		}
 

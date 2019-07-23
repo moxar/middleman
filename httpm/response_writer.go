@@ -45,7 +45,7 @@ func ExtendStatusCoder(next http.Handler) http.Handler {
 }
 
 // StatusCoder returns the StatusCode.
-type StatusCoder interface{
+type StatusCoder interface {
 	StatusCode() int
 }
 
