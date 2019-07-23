@@ -1,7 +1,6 @@
 package httpm_test
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -15,24 +14,20 @@ import (
 )
 
 func TestReadResponseBody(t *testing.T) {
-	type Payload struct {
-		Foo string
-		Bar int
-	}
 
 	r := &http.Response{}
-	r.Body = ioutil.NopCloser(strings.NewReader(`{"foo":"foo", "bar": 4}`))
+	r.Body = ioutil.NopCloser(strings.NewReader(`some string`))
 
-	var got Payload
-	r, err := httpm.ReadResponseBody(json.Unmarshal)(&got)(r)
+	var got []byte
+	r, err := httpm.ReadResponseBody(httpm.DecodeText)(&got)(r)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	want := Payload{Foo: "foo", Bar: 4}
-	if !reflect.DeepEqual(got, want) {
-		t.Error(got, want)
+	want := "some string"
+	if string(got) != want {
+		t.Fail()
 		return
 	}
 }
@@ -115,15 +110,7 @@ func TestComposeResponse(t *testing.T) {
 	})
 }
 
-func ExampleComposeResponse() {
-
-	// Define a noop function, witness print order.
-	Println := func(vs ...interface{}) httpm.ResponseFn {
-		return func(r *http.Response) (*http.Response, error) {
-			fmt.Println(vs...)
-			return r, nil
-		}
-	}
+func ExampleComposeResponse_client() {
 
 	FailOver400 := func(s int) error {
 		if s <= 400 {
@@ -132,33 +119,36 @@ func ExampleComposeResponse() {
 		return errors.New(http.StatusText(s))
 	}
 
+	// Compose response.
+	ParseResponse := func(r *http.Response, status *int, payload *string) error {
+
+		_, err := httpm.ComposeResponse(
+			httpm.ReadResponseStatus(status),
+			httpm.ReturnErrorFromResponseStatus(FailOver400),
+			httpm.ReadResponseBody(httpm.DecodeText)(payload),
+		)(r)
+		return err
+	}
+
 	r := &http.Response{
-		Body:       ioutil.NopCloser(strings.NewReader(`{"foo": "car", "bar": "baz"}`)),
+		Body:       ioutil.NopCloser(strings.NewReader(`some payload`)),
 		StatusCode: 305,
 	}
 
-	// Compose response.
-	var out = make(map[string]string)
-	r, err := httpm.ComposeResponse(
-		Println("Foo"),
-		httpm.ReturnErrorFromResponseStatus(FailOver400),
-		Println("Bar"),
-		httpm.ReadResponseBody(json.Unmarshal)(&out),
-	)(r)
-
+	var out string
+	var status int
+	err := ParseResponse(r, &status, &out)
 	if err != nil {
 		log.Println(err)
 	}
 
-	fmt.Println(out["foo"])
-	fmt.Println(out["bar"])
+	fmt.Println(out)
+	fmt.Println(status)
 
 	// use r
 	_ = r
 
 	// Output:
-	// Foo
-	// Bar
-	// car
-	// baz
+	// some payload
+	// 305
 }

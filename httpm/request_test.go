@@ -1,7 +1,7 @@
 package httpm_test
 
 import (
-	"encoding/json"
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/moxar/middleman/httpm"
 )
@@ -36,12 +37,8 @@ func TestNewRequest(t *testing.T) {
 }
 
 func TestWriteRequestBody(t *testing.T) {
-	type Payload struct {
-		Foo string
-		Bar int
-	}
-	in := Payload{Foo: "foo", Bar: 4}
-	r, err := httpm.WriteRequestBody(json.Marshal)(in)(new(http.Request))
+	in := time.Now()
+	r, err := httpm.WriteRequestBody(httpm.EncodeText)(in)(new(http.Request))
 	if err != nil {
 		t.Error(err)
 		return
@@ -52,16 +49,17 @@ func TestWriteRequestBody(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	var out Payload
-	if err := json.Unmarshal(raw, &out); err != nil {
-		t.Error(err)
+	var out time.Time
+	if err := out.UnmarshalText(raw); err != nil {
+		t.Fail()
 		return
 	}
 
-	if !reflect.DeepEqual(in, out) {
-		t.Error(in, out)
+	if out.Unix() != in.Unix() {
+		t.Fail()
 		return
 	}
+
 	if r.GetBody == nil {
 		t.Error("GetBody should not be nil")
 		return
@@ -76,37 +74,27 @@ func TestWriteRequestBody(t *testing.T) {
 func TestComposeRequest(t *testing.T) {
 
 	t.Run("on happy case", func(t *testing.T) {
-		type Payload struct {
-			Foo string
-			Bar int
-		}
 
 		newRequest := func(path, url string, input interface{}) (*http.Request, error) {
 			return httpm.ComposeRequest(
 				httpm.NewRequest(path, url),
-				httpm.WriteRequestBody(json.Marshal)(input),
+				httpm.WriteRequestBody(httpm.EncodeText)(input),
 			)(nil)
 		}
 
-		in := Payload{Foo: "foo", Bar: 4}
+		in := []byte("some payload")
 		r, err := newRequest("POST", "https://github.com", in)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		raw, err := ioutil.ReadAll(r.Body)
+		out, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		var out Payload
-		if err := json.Unmarshal(raw, &out); err != nil {
-			t.Error(err)
-			return
-		}
-
-		if !reflect.DeepEqual(in, out) {
-			t.Error(in, out)
+		if string(out) != string(in) {
+			t.Fail()
 			return
 		}
 
@@ -141,6 +129,41 @@ func TestComposeRequest(t *testing.T) {
 		}
 		if i != 1 {
 			t.Errorf("too many Fn called, expected 1, having %d", i)
+			return
+		}
+	})
+
+	t.Run("on server side", func(t *testing.T) {
+		now := time.Now()
+		raw, _ := now.MarshalText()
+
+		r := &http.Request{
+			Body: ioutil.NopCloser(bytes.NewReader(raw)),
+			URL:  &url.URL{},
+		}
+		readParams := func(v interface{}, params url.Values) error {
+			m, ok := v.(*map[string][]string)
+			if !ok {
+				return errors.New("incorrect input")
+			}
+			*m = map[string][]string(params)
+			return nil
+		}
+		noopChecker := func(interface{}) error { return nil }
+		var out time.Time
+		var params = map[string][]string{}
+		_, err := httpm.ComposeRequest(
+			httpm.ReadRequestParams(readParams)(&params),
+			httpm.ReadRequestBody(httpm.DecodeAndCheck(httpm.DecodeText, noopChecker))(&out),
+		)(r)
+
+		if err != nil {
+			t.Fail()
+			return
+		}
+		if out.Unix() != now.Unix() {
+			t.Errorf("times are different: in %v, out %v", now.Unix(), out.Unix())
+			t.Fail()
 			return
 		}
 	})

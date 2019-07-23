@@ -1,6 +1,8 @@
 package httpm
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // ResponseWriterFn describes a function that can be member of a chainable ResponseWriter handling.
 type ResponseWriterFn = func(w http.ResponseWriter) http.ResponseWriter
@@ -45,7 +47,7 @@ func ExtendStatusCoder(next http.Handler) http.Handler {
 }
 
 // StatusCoder returns the StatusCode.
-type StatusCoder interface{
+type StatusCoder interface {
 	StatusCode() int
 }
 

@@ -35,6 +35,14 @@ func ReadResponseBody(d Decoder) func(into interface{}) ResponseFn {
 	}
 }
 
+// ReadResponseStatus into status.
+func ReadResponseStatus(status *int) ResponseFn {
+	return func(r *http.Response) (*http.Response, error) {
+		*status = r.StatusCode
+		return r, nil
+	}
+}
+
 // ReturnErrorFromResponseStatus returns an error depending on the response status.
 func ReturnErrorFromResponseStatus(f func(status int) error) ResponseFn {
 	return func(r *http.Response) (*http.Response, error) {
