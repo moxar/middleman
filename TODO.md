@@ -12,7 +12,6 @@
 - ResponseWriter (W)
 	- Tests
 	- Examples
-	- ResponseWriter with Code implementation, and associated middleware
 
 - Model binding middleware (low priority)
 	- the parameter name
@@ -21,7 +20,6 @@
 		- func(error) []byte -- default to http.StatusText
 		- func(error) http status -- default to 404
 	- the context getter/setter (iterable) -- CtxSetXXX
-
 
 ## mcontext
 
