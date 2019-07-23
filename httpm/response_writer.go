@@ -34,3 +34,42 @@ func WriteResponseWriterBody(e Encoder) func(interface{}) ResponseWriterFn {
 		}
 	}
 }
+
+// ExtendStatusCoder is a middleware that extends the current http.ResponseWriter
+// into a StatusCoder.
+func ExtendStatusCoder(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(newResponseWriter(w), r)
+		return
+	})
+}
+
+// StatusCoder returns the StatusCode.
+type StatusCoder interface{
+	StatusCode() int
+}
+
+var (
+	_ StatusCoder = &responseWriter{}
+)
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func newResponseWriter(w http.ResponseWriter) http.ResponseWriter {
+	return &responseWriter{
+		ResponseWriter: w,
+		status:         http.StatusOK,
+	}
+}
+
+func (w *responseWriter) StatusCode() int {
+	return w.status
+}
+
+func (w *responseWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
+}
