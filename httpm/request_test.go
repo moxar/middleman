@@ -1,6 +1,7 @@
 package httpm_test
 
 import (
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/moxar/middleman/httpm"
 )
@@ -35,7 +37,7 @@ func TestNewRequest(t *testing.T) {
 }
 
 func TestWriteRequestBody(t *testing.T) {
-	in := "some string"
+	in := time.Now()
 	r, err := httpm.WriteRequestBody(httpm.EncodeText)(in)(new(http.Request))
 	if err != nil {
 		t.Error(err)
@@ -47,9 +49,13 @@ func TestWriteRequestBody(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	out := string(raw)
+	var out time.Time
+	if err := out.UnmarshalText(raw); err != nil {
+		t.Fail()
+		return
+	}
 
-	if out != in {
+	if out.Unix() != in.Unix() {
 		t.Fail()
 		return
 	}
@@ -76,19 +82,18 @@ func TestComposeRequest(t *testing.T) {
 			)(nil)
 		}
 
-		in := "some payload"
+		in := []byte("some payload")
 		r, err := newRequest("POST", "https://github.com", in)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		raw, err := ioutil.ReadAll(r.Body)
+		out, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		out := string(raw)
-		if out != in {
+		if string(out) != string(in) {
 			t.Fail()
 			return
 		}
@@ -124,6 +129,41 @@ func TestComposeRequest(t *testing.T) {
 		}
 		if i != 1 {
 			t.Errorf("too many Fn called, expected 1, having %d", i)
+			return
+		}
+	})
+
+	t.Run("on server side", func(t *testing.T) {
+		now := time.Now()
+		raw, _ := now.MarshalText()
+
+		r := &http.Request{
+			Body: ioutil.NopCloser(bytes.NewReader(raw)),
+			URL:  &url.URL{},
+		}
+		readParams := func(v interface{}, params url.Values) error {
+			m, ok := v.(*map[string][]string)
+			if !ok {
+				return errors.New("incorrect input")
+			}
+			*m = map[string][]string(params)
+			return nil
+		}
+		noopChecker := func(interface{}) error { return nil }
+		var out time.Time
+		var params = map[string][]string{}
+		_, err := httpm.ComposeRequest(
+			httpm.ReadRequestParams(readParams)(&params),
+			httpm.ReadRequestBody(httpm.DecodeAndCheck(httpm.DecodeText, noopChecker))(&out),
+		)(r)
+
+		if err != nil {
+			t.Fail()
+			return
+		}
+		if out.Unix() != now.Unix() {
+			t.Errorf("times are different: in %v, out %v", now.Unix(), out.Unix())
+			t.Fail()
 			return
 		}
 	})

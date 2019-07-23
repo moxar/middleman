@@ -1,6 +1,8 @@
 package httpm
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // ResponseWriterFn describes a function that can be member of a chainable ResponseWriter handling.
 type ResponseWriterFn = func(w http.ResponseWriter) http.ResponseWriter
