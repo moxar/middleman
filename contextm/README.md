@@ -7,7 +7,7 @@
 
 ```go
 ctx := context.Background()
-ctx = WithRange("first Avenger", "Steve Rogers")
+ctx = WithRange(ctx, "first Avenger", "Steve Rogers")
 ctx = WithRange(ctx, "expert tinker", "Tony Stark")
 ctx = context.WithValue(ctx, ctxKey("not an Avenger"), "Batman")
 ctx = WithRange(ctx, "friendly neighbour", "Peter Parker")
@@ -22,6 +22,6 @@ fmt.Println(Keys(ctx))
 // first Avenger Steve Rogers
 // expert tinker Tony Stark
 // friendly neighbour Peter Parker
-// [ "first Avenger" "expert tinker" "friendly neighbour" ]
+// [first Avenger expert tinker friendly neighbour]
 
 ```

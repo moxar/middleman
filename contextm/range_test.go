@@ -2,6 +2,7 @@ package contextm
 
 import (
 	"context"
+	"fmt"
 	"testing"
 )
 
@@ -58,4 +59,27 @@ func TestRange(t *testing.T) {
 			}
 		}
 	})
+}
+
+func ExampleRange() {
+
+	type ctxKey string
+
+	ctx := context.Background()
+	ctx = WithRange(ctx, "first Avenger", "Steve Rogers")
+	ctx = WithRange(ctx, "expert tinker", "Tony Stark")
+	ctx = context.WithValue(ctx, ctxKey("not an Avenger"), "Batman")
+	ctx = WithRange(ctx, "friendly neighbour", "Peter Parker")
+
+	Range(ctx, func(key, val interface{}) bool {
+		fmt.Println(key, val)
+		return true
+	})
+	fmt.Println(Keys(ctx))
+
+	// Output:
+	// first Avenger Steve Rogers
+	// expert tinker Tony Stark
+	// friendly neighbour Peter Parker
+	// [first Avenger expert tinker friendly neighbour]
 }
