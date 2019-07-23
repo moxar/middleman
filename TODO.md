@@ -2,10 +2,6 @@
 
 ## httpm
 
-- README.md redaction
-- Package documentation
-
-- ~Request (Q)~
 - Response (R)
 	- Tests
 	- Examples
@@ -23,11 +19,6 @@
 
 ## mcontext
 
-- README.md redaction
-- Package documentation
-
-- Code recuperation from bitbucket
-- Tests
 - Examples
 
 ## msqlx

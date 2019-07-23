@@ -7,6 +7,7 @@
 It provides handy ways of setting middlewares at different levels of the stack.
 
 - [httpm](./httpm) (for middleman http) package contains http helpers.
+- [contextm](./contextm) (for middleman context) package contains context extensions.
 
 ## TODO
 
