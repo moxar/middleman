@@ -16,14 +16,6 @@ func ComposeResponseWriter(fn ...ResponseWriterFn) ResponseWriterFn {
 	}
 }
 
-// WriteTextInResponseWriterBody writes the input text in the ResponseWriter.
-func WriteTextInResponseWriterBody(txt string) ResponseWriterFn {
-	return func(w http.ResponseWriter) http.ResponseWriter {
-		w.Write([]byte(txt)) // nolint: errcheck
-		return w
-	}
-}
-
 // WriteResponseWriterStatus writes the input status code as header.
 func WriteResponseWriterStatus(status int) ResponseWriterFn {
 	return func(w http.ResponseWriter) http.ResponseWriter {
