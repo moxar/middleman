@@ -1,4 +1,4 @@
-# httpm
+# contextm
 
 [![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/moxar/middleman/contextm)
 
