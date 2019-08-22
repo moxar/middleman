@@ -58,6 +58,14 @@ func SetRequestContext(ctx context.Context) RequestFn {
 	}
 }
 
+// SetRequestHeader sets the header of the request.
+func SetRequestHeader(h http.Header) RequestFn {
+	return func(r *http.Request) (*http.Request, error) {
+		r.Header = h
+		return r, nil
+	}
+}
+
 // ReadRequestBody decodes the request body.
 func ReadRequestBody(d Decoder) func(into interface{}) RequestFn {
 	return func(into interface{}) RequestFn {
