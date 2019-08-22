@@ -2,6 +2,7 @@ package httpm
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -47,6 +48,13 @@ func WriteRequestBody(e Encoder) func(input interface{}) RequestFn {
 			r.Body, _ = r.GetBody()
 			return r, nil
 		}
+	}
+}
+
+// SetRequestContext adds the context to the request.
+func SetRequestContext(ctx context.Context) RequestFn {
+	return func(r *http.Request) (*http.Request, error) {
+		return r.WithContext(ctx), nil
 	}
 }
 
