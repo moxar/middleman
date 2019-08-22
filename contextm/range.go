@@ -8,8 +8,6 @@ type rangeKey struct{}
 
 var _rangeKey rangeKey
 
-type keys func() []interface{}
-
 // Keys that are set using WithRange.
 func Keys(ctx context.Context) []interface{} {
 	keys, ok := ctx.Value(_rangeKey).([]interface{})

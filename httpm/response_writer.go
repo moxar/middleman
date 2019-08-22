@@ -42,7 +42,6 @@ func WriteResponseWriterBody(e Encoder) func(interface{}) ResponseWriterFn {
 func ExtendStatusCoder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(newResponseWriter(w), r)
-		return
 	})
 }
 

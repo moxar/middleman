@@ -19,7 +19,7 @@ func TestReadResponseBody(t *testing.T) {
 	r.Body = ioutil.NopCloser(strings.NewReader(`some string`))
 
 	var got []byte
-	r, err := httpm.ReadResponseBody(httpm.DecodeText)(&got)(r)
+	_, err := httpm.ReadResponseBody(httpm.DecodeText)(&got)(r)
 	if err != nil {
 		t.Error(err)
 		return
