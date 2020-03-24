@@ -32,3 +32,11 @@ func WithRange(ctx context.Context, key, val interface{}) context.Context {
 	ctx = context.WithValue(ctx, key, val)
 	return context.WithValue(ctx, _rangeKey, append(Keys(ctx), key))
 }
+
+// CtxMapRange appends the fields into context using WithRange.
+func CtxMapRange(ctx context.Context, fields map[string]interface{}) context.Context {
+	for k, v := range fields {
+		ctx = WithRange(ctx, k, v)
+	}
+	return ctx
+}
